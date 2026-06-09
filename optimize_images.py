@@ -45,8 +45,16 @@ PORTRAITS = {
 }
 GALLERY_RANGE = range(20, 66)  # image20..image65 -> 46 gallery photos
 
-# Pixel-rotated sources with no EXIF orientation tag (degrees counterclockwise to apply).
-ROTATE = {19: -90}  # svartstjarna: stored sideways
+# Pixel-rotated sources with no EXIF orientation tag, keyed by docx media number
+# (degrees counterclockwise to apply).
+ROTATE = {
+    19: -90,  # svartstjarna
+    28: 90,  # gallery 09: lighthouse
+    29: -90,  # gallery 10: rider with two horses
+    42: 90,  # gallery 23: white horse, timestamped
+    59: -90,  # gallery 40: Arnar with chestnut and black horse
+    61: -90,  # gallery 42: horses above waterfall
+}
 
 PORTRAIT_MAX = 1100
 GALLERY_MAX = 1600
@@ -133,6 +141,8 @@ def main() -> None:
 
     for idx, num in enumerate(GALLERY_RANGE, start=1):
         src = open_image(media[num])
+        if num in ROTATE:
+            src = src.rotate(ROTATE[num], expand=True)
         save_photo(src.copy(), GALLERY / f"{idx:02d}.webp", GALLERY_MAX, 80)
         save_photo(src.copy(), GALLERY / f"{idx:02d}_thumb.webp", THUMB_MAX, 72)
     print(
