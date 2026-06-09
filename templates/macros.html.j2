@@ -1,0 +1,141 @@
+{# Reusable rendering helpers. `t` is the localized labels dict, `lang` the language code,
+   `asset` the relative prefix to the site root ("" for IS, "../" for DE). #}
+
+{% macro display_name(ref) -%}
+{{ t.unnamed if ref.name in unnamed_markers else ref.name }} {{ t.connective }} {{ ref.farm }}
+{%- endmacro %}
+
+{% macro ref_full(ref) -%}
+{{ display_name(ref) }}{% if ref.feif_id %} ({{ ref.feif_id }}){% endif %}
+{%- endmacro %}
+
+{% macro pedigree(horse) %}
+<p class="pedigree">
+  <strong>{{ t.sire }}:</strong> {{ ref_full(horse.sire) }}<br>
+  <strong>{{ t.dam }}:</strong> {{ ref_full(horse.dam) }}
+</p>
+{% endmacro %}
+
+{% macro score_block(horse) %}
+{% if horse.assessment %}
+{% set a = horse.assessment %}
+{% if a.age and a.year %}
+<p class="assessment-line">{{ t.assessment_line.format(age=a.age, year=a.year) }}</p>
+{% endif %}
+<table class="score-table">
+  <tr class="total-row"><th>{{ t.score_total }}</th><td>{{ a.score.total | score }}</td></tr>
+  <tr><th>{{ t.score_conformation }}</th><td>{{ a.score.conformation | score }}</td></tr>
+  <tr><th>{{ t.score_rideability }}</th><td>{{ a.score.rideability | score }}</td></tr>
+</table>
+{% endif %}
+{% endmacro %}
+
+{% macro results_block(horse) %}
+{% if horse.results %}
+<details class="disclosure">
+  <summary>{{ t.results_heading }}</summary>
+  {% for event in horse.results %}
+  <div class="comp-event">
+    <h5>{{ event.date }} &middot; {{ event.name[lang] }} <span class="event-id">{{ event.event_id }}</span></h5>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>{{ t.col_rider }}</th><th>{{ t.col_discipline }}</th><th>{{ t.col_class }}</th>
+            <th>{{ t.col_round }}</th><th>{{ t.col_score }}</th><th>{{ t.col_rank }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in event.rows %}
+          <tr>
+            <td>{{ r.rider }}</td><td>{{ r.discipline[lang] }}</td><td>{{ r.klass[lang] }}</td>
+            <td>{{ r.phase[lang] }}</td><td>{{ r.score | score }}</td><td>{{ r.rank or '' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+</details>
+{% endif %}
+{% endmacro %}
+
+{% macro offspring_block(horse) %}
+{% if horse.offspring %}
+<details class="disclosure">
+  <summary>{{ t.offspring_heading }} ({{ horse.offspring | length }})</summary>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>FEIF ID</th><th>{{ t.col_name }}</th><th>{{ t.sire }}</th><th>{{ t.col_sex }}</th>
+          <th>{{ t.score_conformation_short }}</th><th>{{ t.score_rideability_short }}</th><th>{{ t.score_total_short }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in horse.offspring %}
+        <tr>
+          <td class="nowrap">{{ o.ref.feif_id }}</td>
+          <td>{{ display_name(o.ref) }}</td>
+          <td>{{ display_name(o.sire) }}</td>
+          <td>{{ sex_labels[o.sex] }}</td>
+          <td>{{ o.score.conformation | score if o.score else '' }}</td>
+          <td>{{ o.score.rideability | score if o.score else '' }}</td>
+          <td>{{ o.score.total | score if o.score else '' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+{% endif %}
+{% endmacro %}
+
+{# Compact card: photo (optional) + name + pedigree, used for young & riding horses. #}
+{% macro horse_card(horse) %}
+<div class="horse-card">
+  {% if horse.image %}
+  <img class="horse-card-img" src="{{ asset }}images/{{ horse.image }}.webp" alt="{{ display_name(horse.ref) }}" loading="lazy">
+  {% endif %}
+  <div class="horse-card-body">
+    <h3>{{ display_name(horse.ref) }}</h3>
+    <p class="registration">{{ horse.ref.feif_id }} &middot; {{ sex_labels[horse.sex] }}</p>
+    {{ pedigree(horse) }}
+  </div>
+</div>
+{% endmacro %}
+
+{# Featured card (home): photo + name + pedigree + scores. #}
+{% macro featured_card(horse) %}
+<div class="horse-card">
+  {% if horse.image %}
+  <img class="horse-card-img" src="{{ asset }}images/{{ horse.image }}.webp" alt="{{ display_name(horse.ref) }}" loading="lazy">
+  {% endif %}
+  <div class="horse-card-body">
+    <h3>{{ display_name(horse.ref) }}</h3>
+    <p class="registration">{{ horse.ref.feif_id }}</p>
+    {{ pedigree(horse) }}
+    {{ score_block(horse) }}
+  </div>
+</div>
+{% endmacro %}
+
+{# Full-width detail block (breeding mares): photo + pedigree + scores + results + offspring. #}
+{% macro mare_detail(horse) %}
+<article class="horse-detail" id="{{ horse.ref.feif_id }}">
+  {% if horse.image %}
+  <div class="horse-detail-media">
+    <img src="{{ asset }}images/{{ horse.image }}.webp" alt="{{ display_name(horse.ref) }}" loading="lazy">
+  </div>
+  {% endif %}
+  <div class="horse-detail-body">
+    <h3>{{ display_name(horse.ref) }}</h3>
+    <p class="registration">{{ horse.ref.feif_id }}</p>
+    {{ pedigree(horse) }}
+    {{ score_block(horse) }}
+    {{ results_block(horse) }}
+    {{ offspring_block(horse) }}
+  </div>
+</article>
+{% endmacro %}

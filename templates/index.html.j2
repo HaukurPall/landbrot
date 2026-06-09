@@ -1,0 +1,20 @@
+{% extends "base.html.j2" %}
+{% from "macros.html.j2" import featured_card with context %}
+{% block body %}
+<section class="hero">
+  <img src="{{ asset }}images/cover.webp" alt="{{ site_name }} – {{ tagline }}">
+  <div class="hero-overlay">
+    <h1>{{ site_name }}</h1>
+    <p>{{ tagline }}</p>
+  </div>
+</section>
+<main class="content" id="main">
+  <p class="lead">{{ prose.intro }}</p>
+  <p>{{ prose.goals }}</p>
+
+  <h2>{{ t.foundation_heading }}</h2>
+  <div class="horse-grid">
+    {% for h in featured %}{{ featured_card(h) }}{% endfor %}
+  </div>
+</main>
+{% endblock %}

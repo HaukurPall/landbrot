@@ -1,0 +1,10 @@
+{% extends "base.html.j2" %}
+{% from "macros.html.j2" import mare_detail with context %}
+{% block body %}
+<div class="page-header"><h1>{{ page_h1 }}</h1></div>
+<main class="content" id="main">
+  <div class="detail-list">
+    {% for h in breeding %}{{ mare_detail(h) }}{% endfor %}
+  </div>
+</main>
+{% endblock %}

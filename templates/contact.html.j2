@@ -1,0 +1,18 @@
+{% extends "base.html.j2" %}
+{% block body %}
+<div class="page-header"><h1>{{ page_h1 }}</h1></div>
+<main class="content" id="main">
+  <h2>{{ t.contact_subheading }}</h2>
+  <div class="contact-list">
+    {% for p in contact %}
+    <div class="contact-card">
+      <h3>{{ p.name }}</h3>
+      <p><span class="contact-label">{{ t.contact_phone }}:</span>
+        <a href="tel:{{ p.phone | replace(' ', '') }}">{{ p.phone }}</a></p>
+      <p><span class="contact-label">{{ t.contact_email }}:</span>
+        <a href="mailto:{{ p.email }}">{{ p.email }}</a></p>
+    </div>
+    {% endfor %}
+  </div>
+</main>
+{% endblock %}

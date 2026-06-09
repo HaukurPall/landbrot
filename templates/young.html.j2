@@ -1,0 +1,16 @@
+{% extends "base.html.j2" %}
+{% from "macros.html.j2" import horse_card with context %}
+{% block body %}
+<div class="page-header"><h1>{{ page_h1 }}</h1></div>
+<main class="content" id="main">
+  <h2>{{ t.young_mares_heading }}</h2>
+  <div class="horse-grid">
+    {% for h in young_mares %}{{ horse_card(h) }}{% endfor %}
+  </div>
+
+  <h2>{{ t.young_males_heading }}</h2>
+  <div class="horse-grid">
+    {% for h in young_males %}{{ horse_card(h) }}{% endfor %}
+  </div>
+</main>
+{% endblock %}

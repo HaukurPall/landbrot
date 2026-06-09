@@ -1,0 +1,18 @@
+[project]
+name = "landbrot-site"
+version = "0.1.0"
+description = "Bilingual (Icelandic/German) static site generator for landbrot.is"
+requires-python = ">=3.13"
+dependencies = ["jinja2>=3.1"]
+
+[dependency-groups]
+dev = [
+    "pillow>=12.2.0",
+    "ruff",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ty.environment]
+python-version = "3.13"
