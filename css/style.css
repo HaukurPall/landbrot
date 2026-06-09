@@ -358,6 +358,13 @@ a:hover {
   color: #ccc;
 }
 
+.footer-logo {
+  height: 110px;
+  width: auto;
+  margin: 0 auto 1rem;
+  opacity: 0.9;
+}
+
 .site-footer .footer-links {
   margin-bottom: 0.35rem;
 }
@@ -720,6 +727,32 @@ a:hover {
   font-size: 2.5rem;
   line-height: 1;
   cursor: pointer;
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.35);
+  border: none;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  padding: 0.75rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.lightbox-nav:hover {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.lightbox-prev {
+  left: 1rem;
+}
+
+.lightbox-next {
+  right: 1rem;
 }
 
 @media (max-width: 768px) {

@@ -22,11 +22,9 @@ ROOT = Path(__file__).parent
 IMAGES = ROOT / "images"
 GALLERY = IMAGES / "gallery"
 
-# docx media number -> output slug for logos and horse portraits.
-LOGOS = {
-    1: "logo-en",
-    3: "logo-is",
-}  # 1 = English wordmark, 3 = Icelandic wordmark (light bg)
+# docx media number -> output slug. 2/4 are the dark-background wordmarks (EN/IS) shown in
+# the footer; 3 (light Icelandic wordmark) is the source of the header horse mark + favicon.
+FOOTER_MARKS = {4: "logo-footer-is", 2: "logo-footer-en"}
 PORTRAITS = {
     6: "lyfting",
     7: "freyja",
@@ -85,39 +83,69 @@ def save_photo(img: Image.Image, dest: Path, max_side: int, quality: int) -> Non
     img.save(dest, "WEBP", quality=quality, method=6)
 
 
-def save_logo(img: Image.Image, dest: Path) -> None:
-    # Line art with text: keep it crisp with lossless WebP.
-    img = img.convert("RGBA")
+def save_footer_mark(img: Image.Image, dest: Path) -> None:
+    """Dark-background wordmark -> white line art on transparency for the footer."""
+    gray = img.convert("L")
+    # The source JPEGs carry a thin light frame at the very edge; cut it before trimming.
+    inset = max(3, gray.width // 40)
+    gray = gray.crop((inset, inset, gray.width - inset, gray.height - inset))
+    bbox = gray.point(lambda v: 255 if v > 40 else 0).getbbox()
+    if bbox is None:
+        raise ValueError("footer wordmark contains no line art")
+    gray = gray.crop(bbox)
+    target_h = 220  # rendered at ~110px -> 2x for high-dpi screens
+    gray = gray.resize(
+        (int(gray.width * target_h / gray.height), target_h), Image.Resampling.LANCZOS
+    )
+    rgba = Image.new("RGBA", gray.size, (255, 255, 255, 0))
+    rgba.putalpha(gray)  # brightness becomes opacity: black bg vanishes, white lines stay
     dest.parent.mkdir(parents=True, exist_ok=True)
-    img.save(dest, "WEBP", lossless=True, method=6)
+    rgba.save(dest, "WEBP", lossless=True, method=6)
 
 
-def save_logo_mark(img: Image.Image, dest: Path) -> None:
-    """Horse line-art only, for the site header (the wordmark text is HTML).
+def horse_art(img: Image.Image, target_h: int) -> Image.Image:
+    """Extract the horse line art from the light wordmark logo, as grayscale.
 
-    The source logo is thin light line art over the top ~2/3, with the wordmark below.
-    Crop the art, trim the margins, then thicken the strokes so they survive being
-    displayed at ~48px tall.
+    The source is thin light line art over the top ~2/3, with the wordmark text below.
+    Crop the art, trim the margins, then thicken the strokes (MinFilter dilates dark
+    pixels) so they survive small display sizes.
     """
     from PIL import ImageFilter
 
     gray = img.convert("L")
     art = gray.crop((0, 0, gray.width, int(gray.height * 0.68)))
-    # Trim white margins: find the bounding box of non-white pixels.
-    mask = art.point(lambda v: 255 if v < 230 else 0)
-    bbox = mask.getbbox()
+    bbox = art.point(lambda v: 255 if v < 230 else 0).getbbox()
     if bbox is None:
         raise ValueError("logo crop contains no line art")
-    art = art.crop(bbox)
-    # Thicken strokes (MinFilter dilates dark pixels), then scale to display size.
-    art = art.filter(ImageFilter.MinFilter(3))
-    target_h = 192  # rendered at 48px -> 4x for high-dpi screens
-    art = art.resize((int(art.width * target_h / art.height), target_h), Image.Resampling.LANCZOS)
-    # White -> transparent so the mark sits on any background.
+    art = art.crop(bbox).filter(ImageFilter.MinFilter(3))
+    return art.resize((int(art.width * target_h / art.height), target_h), Image.Resampling.LANCZOS)
+
+
+def save_logo_mark(img: Image.Image, dest: Path) -> None:
+    """Horse line art on transparency, for the site header (the wordmark text is HTML)."""
+    art = horse_art(img, target_h=192)  # rendered at 48px -> 4x for high-dpi screens
     rgba = Image.new("RGBA", art.size, (40, 40, 40, 0))
-    rgba.putalpha(art.point(lambda v: 255 - v))
+    rgba.putalpha(art.point(lambda v: 255 - v))  # white -> transparent
     dest.parent.mkdir(parents=True, exist_ok=True)
     rgba.save(dest, "WEBP", lossless=True, method=6)
+
+
+def save_favicon(img: Image.Image, dest: Path) -> None:
+    """Horse line art centered on a white square, visible in any browser tab theme."""
+    art = horse_art(img, target_h=128).convert("RGB")  # oversample, then fit
+    art.thumbnail((56, 56), Image.Resampling.LANCZOS)
+    canvas = Image.new("RGB", (64, 64), "white")
+    canvas.paste(art, ((64 - art.width) // 2, (64 - art.height) // 2))
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(dest, "PNG")
+
+
+def save_og_image(cover: Path, dest: Path) -> None:
+    """1200x630 JPEG social-preview crop of the hero photo (JPEG for scraper support)."""
+    img = Image.open(cover).convert("RGB")
+    img = ImageOps.fit(img, (1200, 630), Image.Resampling.LANCZOS)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    img.save(dest, "JPEG", quality=85, optimize=True)
 
 
 def main() -> None:
@@ -125,12 +153,18 @@ def main() -> None:
     print(f"Reading media from {docx.name}")
     media = load_media(docx)
 
-    for num, slug in LOGOS.items():
-        save_logo(open_image(media[num]), IMAGES / f"{slug}.webp")
+    for num, slug in FOOTER_MARKS.items():
+        save_footer_mark(open_image(media[num]), IMAGES / f"{slug}.webp")
         print(f"  logo    image{num} -> {slug}.webp")
 
     save_logo_mark(open_image(media[3]), IMAGES / "logo-mark.webp")
     print("  logo    image3 -> logo-mark.webp (horse art only)")
+
+    save_favicon(open_image(media[3]), IMAGES / "favicon.png")
+    print("  logo    image3 -> favicon.png")
+
+    save_og_image(IMAGES / "cover.webp", IMAGES / "og-image.jpg")
+    print("  social  cover.webp -> og-image.jpg (1200x630)")
 
     for num, slug in PORTRAITS.items():
         img = open_image(media[num])

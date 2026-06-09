@@ -50,6 +50,30 @@ REDIRECT_STUB = """<!DOCTYPE html>
 </html>
 """
 
+# GitHub Pages serves this for any unknown URL, so asset paths must be absolute.
+NOT_FOUND_PAGE = """<!DOCTYPE html>
+<html lang="is">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>404 – Landbrot</title>
+  <link rel="stylesheet" href="/css/style.css?v={css_version}">
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+</head>
+<body>
+  <main class="content placeholder">
+    <img src="/images/logo-mark.webp" alt="Landbrot" style="height:72px;margin:0 auto 1rem;">
+    <h1>404</h1>
+    <p>Síðan fannst ekki · Seite nicht gefunden · Page not found</p>
+    <p>
+      <a href="/">Forsíða</a> · <a href="/de/">Startseite</a> · <a href="/en/">Home</a>
+    </p>
+  </main>
+</body>
+</html>
+"""
+
 
 def score_filter(value: float) -> str:
     """Format a breeding score with a comma decimal separator: 8.0 -> '8,00'."""
@@ -68,6 +92,11 @@ def build_env() -> Environment:
 
 
 CSS_VERSION = hashlib.sha256((ROOT / "css" / "style.css").read_bytes()).hexdigest()[:10]
+
+
+def page_url(lang: str, file: str) -> str:
+    """Absolute URL of a page in a given language."""
+    return f"{BASE_URL}/{'' if lang == 'is' else lang + '/'}{file}"
 
 
 def lang_href(current: str, target: str, file: str) -> str:
@@ -98,6 +127,10 @@ def page_context(page: dict, lang: str) -> dict:
         "tagline": content.TAGLINE[lang],
         "year": datetime.date.today().year,
         "css_version": CSS_VERSION,
+        "base_url": BASE_URL,
+        "page_url": page_url(lang, page["file"]),
+        "og_locale": {"is": "is_IS", "de": "de_DE", "en": "en_GB"}[lang],
+        "footer_logo": "logo-footer-is.webp" if lang == "is" else "logo-footer-en.webp",
         "page_title": page["title"][lang],
         "page_desc": page["desc"][lang],
         "page_h1": page["nav"][lang],
@@ -130,10 +163,7 @@ def page_context(page: dict, lang: str) -> dict:
         ],
         "hreflang_links": [
             *(
-                {
-                    "hreflang": target,
-                    "href": f"{BASE_URL}/{'' if target == 'is' else target + '/'}{page['file']}",
-                }
+                {"hreflang": target, "href": page_url(target, page["file"])}
                 for target in content.LANGS
             ),
             {"hreflang": "x-default", "href": f"{BASE_URL}/{page['file']}"},
@@ -167,6 +197,24 @@ def main() -> None:
     for old, new in REDIRECTS.items():
         (DIST / old).write_text(REDIRECT_STUB.format(target=new, base=BASE_URL), encoding="utf-8")
     print(f"Wrote {len(REDIRECTS)} redirect stubs")
+
+    (DIST / "404.html").write_text(NOT_FOUND_PAGE.format(css_version=CSS_VERSION), encoding="utf-8")
+
+    urls = "\n".join(
+        f"  <url><loc>{page_url(lang, page['file'])}</loc></url>"
+        for page in content.PAGES
+        for lang in content.LANGS
+    )
+    (DIST / "sitemap.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{urls}\n</urlset>\n",
+        encoding="utf-8",
+    )
+    (DIST / "robots.txt").write_text(
+        f"User-agent: *\nAllow: /\n\nSitemap: {BASE_URL}/sitemap.xml\n", encoding="utf-8"
+    )
+    print("Wrote 404.html, sitemap.xml, robots.txt")
 
     shutil.copytree(ROOT / "css", DIST / "css")
     shutil.copytree(ROOT / "images", DIST / "images")
