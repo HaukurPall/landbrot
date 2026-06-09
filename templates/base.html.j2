@@ -8,7 +8,7 @@
   {% for alt in hreflang_links %}
   <link rel="alternate" hreflang="{{ alt.hreflang }}" href="{{ alt.href }}">
   {% endfor %}
-  <link rel="stylesheet" href="{{ asset }}css/style.css">
+  <link rel="stylesheet" href="{{ asset }}css/style.css?v={{ css_version }}">
   <link rel="icon" href="{{ asset }}images/logo.jpg">
 </head>
 <body>
@@ -16,7 +16,11 @@
   <header class="site-header">
     <div class="header-inner">
       <a href="index.html" class="logo">
-        <img src="{{ asset }}images/{{ logo_file }}" alt="{{ site_name }} – {{ tagline }}">
+        <img src="{{ asset }}images/logo-mark.webp" alt="">
+        <span class="logo-text">
+          <span class="logo-name">{{ site_name }}</span>
+          <span class="logo-tagline">{{ tagline }}</span>
+        </span>
       </a>
       <div class="header-right">
         <button class="nav-toggle" aria-label="{{ t.menu }}" aria-expanded="false"

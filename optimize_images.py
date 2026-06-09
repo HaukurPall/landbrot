@@ -81,6 +81,34 @@ def save_logo(img: Image.Image, dest: Path) -> None:
     img.save(dest, "WEBP", lossless=True, method=6)
 
 
+def save_logo_mark(img: Image.Image, dest: Path) -> None:
+    """Horse line-art only, for the site header (the wordmark text is HTML).
+
+    The source logo is thin light line art over the top ~2/3, with the wordmark below.
+    Crop the art, trim the margins, then thicken the strokes so they survive being
+    displayed at ~48px tall.
+    """
+    from PIL import ImageFilter
+
+    gray = img.convert("L")
+    art = gray.crop((0, 0, gray.width, int(gray.height * 0.68)))
+    # Trim white margins: find the bounding box of non-white pixels.
+    mask = art.point(lambda v: 255 if v < 230 else 0)
+    bbox = mask.getbbox()
+    if bbox is None:
+        raise ValueError("logo crop contains no line art")
+    art = art.crop(bbox)
+    # Thicken strokes (MinFilter dilates dark pixels), then scale to display size.
+    art = art.filter(ImageFilter.MinFilter(3))
+    target_h = 192  # rendered at 48px -> 4x for high-dpi screens
+    art = art.resize((int(art.width * target_h / art.height), target_h), Image.Resampling.LANCZOS)
+    # White -> transparent so the mark sits on any background.
+    rgba = Image.new("RGBA", art.size, (40, 40, 40, 0))
+    rgba.putalpha(art.point(lambda v: 255 - v))
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    rgba.save(dest, "WEBP", lossless=True, method=6)
+
+
 def main() -> None:
     docx = next(ROOT.glob("*íslenska*.docx"))
     print(f"Reading media from {docx.name}")
@@ -89,6 +117,9 @@ def main() -> None:
     for num, slug in LOGOS.items():
         save_logo(open_image(media[num]), IMAGES / f"{slug}.webp")
         print(f"  logo    image{num} -> {slug}.webp")
+
+    save_logo_mark(open_image(media[3]), IMAGES / "logo-mark.webp")
+    print("  logo    image3 -> logo-mark.webp (horse art only)")
 
     for num, slug in PORTRAITS.items():
         save_photo(open_image(media[num]), IMAGES / f"{slug}.webp", PORTRAIT_MAX, 82)

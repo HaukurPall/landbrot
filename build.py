@@ -10,6 +10,7 @@ data in :mod:`data.horses` and :mod:`data.content`, then copies static assets in
 from __future__ import annotations
 
 import datetime
+import hashlib
 import shutil
 from pathlib import Path
 
@@ -66,6 +67,9 @@ def build_env() -> Environment:
     return env
 
 
+CSS_VERSION = hashlib.sha256((ROOT / "css" / "style.css").read_bytes()).hexdigest()[:10]
+
+
 def page_context(page: dict, lang: str) -> dict:
     """Everything a template needs to render one page in one language."""
     asset = "" if lang == "is" else "../"
@@ -82,7 +86,7 @@ def page_context(page: dict, lang: str) -> dict:
         "site_name": content.SITE_NAME,
         "tagline": content.TAGLINE[lang],
         "year": datetime.date.today().year,
-        "logo_file": "logo-is.webp" if lang == "is" else "logo-en.webp",
+        "css_version": CSS_VERSION,
         "page_title": page["title"][lang],
         "page_desc": page["desc"][lang],
         "page_h1": page["nav"][lang],
