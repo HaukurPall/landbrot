@@ -16,9 +16,10 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 
-def bl(is_: str, de: str | None = None) -> dict[str, str]:
-    """Bilingual string; ``de`` defaults to the Icelandic value when identical."""
-    return {"is": is_, "de": de if de is not None else is_}
+def bl(is_: str, de: str | None = None, en: str | None = None) -> dict[str, str]:
+    """Localized string; ``de``/``en`` default to the Icelandic value when identical
+    (proper nouns like event names stay Icelandic in every language)."""
+    return {"is": is_, "de": de if de is not None else is_, "en": en if en is not None else is_}
 
 
 class Sex(StrEnum):
@@ -120,13 +121,17 @@ LYFTING = Horse(
         CompEvent(
             date="18.07.2018",
             event_id="IS2018SPR153",
-            name=bl("Íslandsmót í hestaíþróttum", "Isländische Reitmeisterschaften"),
+            name=bl(
+                "Íslandsmót í hestaíþróttum",
+                "Isländische Reitmeisterschaften",
+                "Icelandic Equestrian Championships",
+            ),
             rows=(
                 CompRow(
                     "Helga Una Björnsdóttir",
                     bl("Tölt T2"),
                     bl("Master class", "Meisterklasse"),
-                    bl("Forkeppni", "Vorentscheidung"),
+                    bl("Forkeppni", "Vorentscheidung", "Preliminary round"),
                     7.67,
                     "3.",
                 ),
@@ -134,7 +139,7 @@ LYFTING = Horse(
                     "Helga Una Björnsdóttir",
                     bl("Tölt T2"),
                     bl("Master class", "Meisterklasse"),
-                    bl("A úrslit", "A-Finale"),
+                    bl("A úrslit", "A-Finale", "A-final"),
                     7.38,
                     "3.",
                 ),
@@ -146,21 +151,22 @@ LYFTING = Horse(
             name=bl(
                 "Íslandsmót barna-, unglinga- og ungmennaflokka",
                 "Isländische Jugendmeisterschaften",
+                "Icelandic Youth Championships",
             ),
             rows=(
                 CompRow(
                     "Oddur Ólafsson",
                     bl("Tölt T2"),
-                    bl("Ungmennaflokkur", "Jugendklasse"),
-                    bl("A úrslit", "A-Finale"),
+                    bl("Ungmennaflokkur", "Jugendklasse", "Young adults class"),
+                    bl("A úrslit", "A-Finale", "A-final"),
                     7.08,
                     "1.",
                 ),
                 CompRow(
                     "Oddur Ólafsson",
-                    bl("Fimmgangur F1", "Fünfgang F1"),
-                    bl("Ungmennaflokkur", "Jugendklasse"),
-                    bl("B úrslit", "B-Finale"),
+                    bl("Fimmgangur F1", "Fünfgang F1", "Five gait F1"),
+                    bl("Ungmennaflokkur", "Jugendklasse", "Young adults class"),
+                    bl("B úrslit", "B-Finale", "B-final"),
                     6.00,
                     "5.",
                 ),
@@ -174,8 +180,8 @@ LYFTING = Horse(
                 CompRow(
                     "Oddur Ólafsson",
                     bl(""),
-                    bl("Ungmennaflokkur", "Jugendklasse"),
-                    bl("Undanúrslit", "Semifinale"),
+                    bl("Ungmennaflokkur", "Jugendklasse", "Young adults class"),
+                    bl("Undanúrslit", "Semifinale", "Semi-finals"),
                     8.32,
                     "25.",
                 ),
@@ -189,8 +195,8 @@ LYFTING = Horse(
                 CompRow(
                     "Oddur Ólafsson",
                     bl(""),
-                    bl("Ungmennaflokkur", "Jugendklasse"),
-                    bl("A úrslit", "A-Finale"),
+                    bl("Ungmennaflokkur", "Jugendklasse", "Young adults class"),
+                    bl("A úrslit", "A-Finale", "A-final"),
                     8.42,
                     "2.",
                 ),
@@ -300,9 +306,9 @@ GNA = Horse(
             rows=(
                 CompRow(
                     "Helga Una Björnsdóttir",
-                    bl("Fimmgangur F2", "Fünfgang F2"),
-                    bl("Meistaraflokkur", "Meisterklasse"),
-                    bl("Forkeppni", "Vorentscheidung"),
+                    bl("Fimmgangur F2", "Fünfgang F2", "Five gait F2"),
+                    bl("Meistaraflokkur", "Meisterklasse", "Master class"),
+                    bl("Forkeppni", "Vorentscheidung", "Preliminary round"),
                     7.03,
                     "2.",
                 ),

@@ -70,10 +70,21 @@ def build_env() -> Environment:
 CSS_VERSION = hashlib.sha256((ROOT / "css" / "style.css").read_bytes()).hexdigest()[:10]
 
 
+def lang_href(current: str, target: str, file: str) -> str:
+    """Relative link from `file` rendered in `current` language to the same page in `target`.
+
+    Icelandic lives at the site root; every other language in a subdirectory named after it.
+    """
+    if current == target:
+        return file
+    up = "" if current == "is" else "../"
+    down = "" if target == "is" else f"{target}/"
+    return up + down + file
+
+
 def page_context(page: dict, lang: str) -> dict:
     """Everything a template needs to render one page in one language."""
     asset = "" if lang == "is" else "../"
-    other_prefix = "de/" if lang == "is" else "../"
     t = {key: value[lang] for key, value in content.LABELS.items()}
     sex_labels = {
         horses.Sex.MARE: t["sex_mare"],
@@ -98,14 +109,33 @@ def page_context(page: dict, lang: str) -> dict:
                 "file": item["file"],
                 "label": item["nav"][lang],
                 "active": item["key"] == page["key"],
+                "divider": item.get("nav_divider", False),
             }
             for item in content.PAGES
+            if item.get("in_nav", True)
         ],
-        "lang_is_href": (asset if lang == "is" else other_prefix) + page["file"],
-        "lang_de_href": (other_prefix if lang == "is" else "") + page["file"],
+        "footer_links": [
+            {"file": item["file"], "label": item["nav"][lang]}
+            for item in content.PAGES
+            if not item.get("in_nav", True)
+        ],
+        "lang_links": [
+            {
+                "code": target,
+                "href": lang_href(lang, target, page["file"]),
+                "active": target == lang,
+                "title": content.LABELS[f"lang_{target}"][lang],
+            }
+            for target in content.LANGS
+        ],
         "hreflang_links": [
-            {"hreflang": "is", "href": f"{BASE_URL}/{page['file']}"},
-            {"hreflang": "de", "href": f"{BASE_URL}/de/{page['file']}"},
+            *(
+                {
+                    "hreflang": target,
+                    "href": f"{BASE_URL}/{'' if target == 'is' else target + '/'}{page['file']}",
+                }
+                for target in content.LANGS
+            ),
             {"hreflang": "x-default", "href": f"{BASE_URL}/{page['file']}"},
         ],
         "prose": {key: value[lang] for key, value in content.PROSE.items()},
@@ -123,12 +153,13 @@ def main() -> None:
     env = build_env()
     if DIST.exists():
         shutil.rmtree(DIST)
-    (DIST / "de").mkdir(parents=True)
+    for lang in content.LANGS:
+        (DIST if lang == "is" else DIST / lang).mkdir(parents=True, exist_ok=True)
 
     for page in content.PAGES:
         template = env.get_template(TEMPLATE_BY_KEY[page["key"]])
         for lang in content.LANGS:
-            out_dir = DIST if lang == "is" else DIST / "de"
+            out_dir = DIST if lang == "is" else DIST / lang
             html = template.render(page_context(page, lang))
             (out_dir / page["file"]).write_text(html, encoding="utf-8")
     print(f"Rendered {len(content.PAGES)} pages x {len(content.LANGS)} languages")

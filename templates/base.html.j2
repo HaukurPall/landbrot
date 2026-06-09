@@ -28,14 +28,15 @@
         <nav class="main-nav" aria-label="{{ t.menu }}">
           <ul>
             {% for item in nav %}
-            <li><a href="{{ item.file }}"{% if item.active %} class="active" aria-current="page"{% endif %}>{{ item.label }}</a></li>
+            <li{% if item.divider %} class="nav-divider"{% endif %}><a href="{{ item.file }}"{% if item.active %} class="active" aria-current="page"{% endif %}>{{ item.label }}</a></li>
             {% endfor %}
           </ul>
         </nav>
         <div class="lang-switch" aria-label="Language">
-          <a href="{{ lang_is_href }}"{% if lang == 'is' %} class="active"{% endif %} hreflang="is" lang="is" title="{{ t.lang_is }}">IS</a>
-          <span aria-hidden="true">/</span>
-          <a href="{{ lang_de_href }}"{% if lang == 'de' %} class="active"{% endif %} hreflang="de" lang="de" title="{{ t.lang_de }}">DE</a>
+          {% for L in lang_links %}
+          {% if not loop.first %}<span aria-hidden="true">/</span>{% endif %}
+          <a href="{{ L.href }}"{% if L.active %} class="active"{% endif %} hreflang="{{ L.code }}" lang="{{ L.code }}" title="{{ L.title }}">{{ L.code | upper }}</a>
+          {% endfor %}
         </div>
       </div>
     </div>
@@ -44,6 +45,11 @@
   {% block body %}{% endblock %}
 
   <footer class="site-footer">
+    <p class="footer-links">
+      {% for link in footer_links %}
+      <a href="{{ link.file }}">{{ link.label }}</a>
+      {% endfor %}
+    </p>
     <p>&copy; {{ year }} {{ t.footer }}</p>
   </footer>
   {% block scripts %}{% endblock %}

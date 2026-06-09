@@ -45,6 +45,9 @@ PORTRAITS = {
 }
 GALLERY_RANGE = range(20, 66)  # image20..image65 -> 46 gallery photos
 
+# Pixel-rotated sources with no EXIF orientation tag (degrees counterclockwise to apply).
+ROTATE = {19: -90}  # svartstjarna: stored sideways
+
 PORTRAIT_MAX = 1100
 GALLERY_MAX = 1600
 THUMB_MAX = 640
@@ -122,7 +125,10 @@ def main() -> None:
     print("  logo    image3 -> logo-mark.webp (horse art only)")
 
     for num, slug in PORTRAITS.items():
-        save_photo(open_image(media[num]), IMAGES / f"{slug}.webp", PORTRAIT_MAX, 82)
+        img = open_image(media[num])
+        if num in ROTATE:
+            img = img.rotate(ROTATE[num], expand=True)
+        save_photo(img, IMAGES / f"{slug}.webp", PORTRAIT_MAX, 82)
         print(f"  portrait image{num} -> {slug}.webp")
 
     for idx, num in enumerate(GALLERY_RANGE, start=1):
